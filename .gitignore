@@ -1,0 +1,10 @@
+/data/out/*.csv
+!/data/in/*.csv
+*.log
+*.json
+/venv
+/.vscode
+.idea/
+/log/*.log
+src/tool/__pycache__/*
+__pycache__

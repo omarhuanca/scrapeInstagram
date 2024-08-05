@@ -1,0 +1,3 @@
+[credentials]
+email=omar.huanca.sm@gmail.com
+password=Internetes3!
