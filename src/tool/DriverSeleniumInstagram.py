@@ -41,13 +41,15 @@ class DriverSeleniumInstagram:
 
     def openDiv(self, post, selectorOpenDiv):
         elementLike = post.find_element(By.CSS_SELECTOR, selectorOpenDiv)
+        self.executeElementClick(elementLike)
+
+    def executeElementClick(self, elementLike):
         ActionChains(self._browser).move_to_element(elementLike).perform()
         elementLike.click()
 
     def closeDiv(self, selectorCloseDiv):
         elementCloseDiv = self._browser.find_element(By.CSS_SELECTOR, selectorCloseDiv)
-        ActionChains(self._browser).move_to_element(elementCloseDiv).perform()
-        elementCloseDiv.click()
+        self.executeElementClick(elementCloseDiv)
 
     def evaluateExpressionCssSelectorMany(self, expressionCssSelector):
         try:
