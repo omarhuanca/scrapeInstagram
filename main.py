@@ -14,6 +14,9 @@ def main():
         scrapeInstagram.getLikeFromPage("1_", "https://www.instagram.com/p/C8xtve2Rcfl/")
     elif itemOption == "2":
         scrapeInstagram.generateNavigationProfile("2_", 'https://www.instagram.com/andresojedaxpartidocolorado/', 1)
+    elif itemOption == "3":
+        scrapeInstagram.generateLikeFromListPublication("3_", 'https://www.instagram.com/andresojedaxpartidocolorado/',
+                                                        1)
     driverSeleniumInstagram.closeExecution()
 
 
