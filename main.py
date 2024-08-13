@@ -19,6 +19,9 @@ def main():
                                                         1)
     elif itemOption == "4":
         scrapeInstagram.getCommentFromPublication("4_", "https://www.instagram.com/p/C8xtve2Rcfl/")
+    elif itemOption == "5":
+        scrapeInstagram.getCommentFromListPublication("5_", 'https://www.instagram.com/andresojedaxpartidocolorado/', 0)
+
     driverSeleniumInstagram.closeExecution()
 
 

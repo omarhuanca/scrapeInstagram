@@ -10,7 +10,9 @@ from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from time import sleep
 from src.business.account.BasicAccount import BasicAccount
+from src.business.account.PublicationComment import PublicationComment
 from src.business.account.PublicationUser import PublicationUser
+from src.business.account.UserComment import UserComment
 from src.business.account.UserLike import UserLike
 
 
@@ -104,7 +106,7 @@ class ScrapeInstagram:
                     arrayPublicationUser.append(publicationUser)
                     sleep(0.5)
                     link.send_keys(Keys.PAGE_DOWN)
-                    #sleep(1)
+                    # sleep(1)
                     sleep(5)
 
             if self.findElement(self._driverSelenium.getBrowser(), selectorCloseDiv):
@@ -179,24 +181,125 @@ class ScrapeInstagram:
             writer.writerow(['url_publication', 'B_name', 'B_profile'])
 
             for publicationUser in arrayPublicationUser:
-                writer.writerow([publicationUser.getUrlPublication(), publicationUser.getUserLike().getName(), publicationUser.getUserLike().getProfile()])
+                writer.writerow([publicationUser.getUrlPublication(), publicationUser.getUserLike().getName(),
+                                 publicationUser.getUserLike().getProfile()])
 
     def getCommentFromPublication(self, prefix, urlPublication):
         selectorBlockComment = 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1iyjqo2 x2lwn1j xeuugli xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > div > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"]'
         selectorLinkUser = 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s x1q0g3np xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > span[class="x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"] > span[class="xt0psk2"] > div > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz notranslate _a6hd"]'
-        selectorcomment= 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > span[class="x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"]'
+        selectorComment = 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > span[class="x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"]'
 
         os.chdir("./data/out")
         if len(urlPublication) > 0 and len(prefix) > 0:
             self._driverSelenium.executeGetPage(url=f"{urlPublication}")
-            listBlockComment = self._driverSelenium.evaluateExpressionCssSelectorMany(selectorBlockComment)
+            arrayPublicationComment = []
+
+            self.getCommentPublication(arrayPublicationComment, selectorBlockComment, selectorComment, selectorLinkUser,
+                                       urlPublication)
 
             csvOut = prefix + "user_comment_%s.csv" % datetime.now().strftime(
                 "%Y_%m_%d_%H%M")
             writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
             writer.writerow(['publication', 'B_name', 'B_comment'])
+
+            for publicationComment in arrayPublicationComment:
+                writer.writerow(
+                    [publicationComment.getUrlPublication(), publicationComment.getUserComment().getUrlUsername(),
+                     publicationComment.getUserComment().getComment()])
+
+    def getCommentPublication(self, arrayPublicationComment, selectorBlockComment, selectorComment, selectorLinkUser,
+                              urlPublication):
+        try:
+            listBlockComment = self._driverSelenium.evaluateExpressionCssSelectorMany(selectorBlockComment)
+            print("urlPublication")
+            print(urlPublication)
             for blockComment in listBlockComment:
                 if self.findElement(blockComment, selectorLinkUser):
                     linkUser = blockComment.find_element(By.CSS_SELECTOR, selectorLinkUser)
-                    commentUser = blockComment.find_element(By.CSS_SELECTOR, selectorcomment)
-                    writer.writerow([urlPublication, linkUser.get_attribute("href"), commentUser.text])
+                    commentUser = blockComment.find_element(By.CSS_SELECTOR, selectorComment)
+                    userComment = UserComment(linkUser.get_attribute("href"), commentUser.text)
+                    publicationComment = PublicationComment(urlPublication, userComment)
+                    print("linkUser.get_attribute")
+                    print(linkUser.get_attribute("href"))
+                    print(commentUser.text)
+                    arrayPublicationComment.append(publicationComment)
+                    sleep(5)
+        except Exception as e:
+            print(e)
+
+    def getCommentFromListPublication(self, prefix, page, numberIteration):
+        selectorPublication = 'div[class="_ac7v xras4av xgc1b0m xat24cr xzboxd6"] > div[class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p xfllauq xo2y696 x11i5rnm x2pgyrj"] > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz _a6hd"]'
+        selectorClosePublication = 'div[class="x160vmok x10l6tqk x1eu8d0j x1vjfegm"] > div[class="x1i10hfl x972fbf xcfux6l x1qhh985 xm0m39n x9f619 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x6s0dn4 xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x1ypdohk x78zum5 xl56j7k x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xcdnw81"]'
+
+        selectorBlockComment = 'div[class="x1qjc9v5 x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x78zum5 xdt5ytf x2lah0s xk390pu xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 xggy1nq x11njtxf"] > li[class="_a9zj _a9zl"] > div[class="_a9zm"] > div[class=" _a9zo"] > div[class="_a9zr"]'
+        selectorLinkUser = 'h3[class="_a9zc"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh xw3qccf x1n2onr6 x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > span[class="xt0psk2"] > div > a[class="x1i10hfl xjqpnuy xa49m3k xqeqjp1 x2hbi6w xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1q0g3np x1lku1pv x1a2a7pz x6s0dn4 xjyslct x1ejq31n xd10rxx x1sy0etr x17r0tee x9f619 x1ypdohk x1f6kntn xwhw2v2 xl56j7k x17ydfre x2b8uid xlyipyv x87ps6o x14atkfc xcdnw81 x1i0vuye xjbqb8w xm3z3ea x1x8b98j x131883w x16mih1h x972fbf xcfux6l x1qhh985 xm0m39n xt0psk2 xt7dq6l xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x1n5bzlp xqnirrm xj34u2y x568u83"]'
+        selectorComment = 'div[class="_a9zs"] > span[class="_ap3a _aaco _aacu _aacx _aad7 _aade"]'
+
+        os.chdir("./data/out")
+        if len(page) > 0 and len(prefix) > 0:
+            self._driverSelenium.executeGetPage(url=f"{page}")
+            sleep(5)
+            arrayPublicationComment = []
+            try:
+                counter = 0
+                #while counter <= numberIteration:
+                #    counter = counter + 1
+                #    self._driverSelenium.scrollToBottomCssSelector(selectorPublication, 1)
+                #    sleep(10)
+
+                if self.findElement(self._driverSelenium.getBrowser(), selectorPublication):
+                    listPublication = self._driverSelenium.evaluateExpressionCssSelectorMany(selectorPublication)
+                    sleep(5)
+
+                    for publication in listPublication:
+                        self._driverSelenium.executeElementClick(publication)
+                        sleep(10)
+
+                        listBlockComment = self._driverSelenium.evaluateExpressionCssSelectorMany(
+                            selectorBlockComment)
+                        print("urlPublication")
+                        print(publication.get_attribute("href"))
+                        for blockComment in listBlockComment:
+                            linkUserContent = ''
+                            commentUserContent = ''
+
+                            sleep(5)
+
+                            if self.findElement(blockComment, selectorLinkUser):
+                                linkUser = blockComment.find_element(By.CSS_SELECTOR, selectorLinkUser)
+                                if linkUser.get_attribute("href") is not None:
+                                    print("linkUser.get_attribute")
+                                    print(linkUser.get_attribute("href"))
+                                    linkUserContent = linkUser.get_attribute("href")
+
+                            if self.findElement(blockComment, selectorComment):
+                                commentUser = blockComment.find_element(By.CSS_SELECTOR, selectorComment)
+                                if commentUser is not None:
+                                    print("commentUser")
+                                    print(commentUser.text)
+                                    commentUserContent = commentUser.text
+
+                            userComment = UserComment(linkUserContent, commentUserContent)
+                            publicationComment = PublicationComment(publication.get_attribute("href"),
+                                                                    userComment)
+
+                            arrayPublicationComment.append(publicationComment)
+
+                        sleep(10)
+                        if self.findElement(self._driverSelenium.getBrowser(), selectorClosePublication):
+                            self._driverSelenium.closeDiv(selectorClosePublication)
+                            sleep(20)
+
+            except Exception as e:
+                print(e)
+
+            if 0 < len(arrayPublicationComment):
+                csvOut = prefix + "publication_comment_%s.csv" % datetime.now().strftime(
+                    "%Y_%m_%d_%H%M")
+                writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
+                writer.writerow(['url_publication', 'B_name', 'B_profile'])
+
+            for publicationComment in arrayPublicationComment:
+                writer.writerow(
+                    [publicationComment.getUrlPublication(), publicationComment.getUserComment().getUrlUsername(),
+                     publicationComment.getUserComment().getComment()])
