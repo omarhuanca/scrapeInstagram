@@ -11,7 +11,7 @@ def main():
     itemOption = input("Enter number value: ")
 
     if itemOption == "1":
-        scrapeInstagram.getLikeFromPublication("1_", "https://www.instagram.com/p/C8xtve2Rcfl/")
+        scrapeInstagram.getLikeFromPublication("1_", "https://www.instagram.com/p/C8xtve2Rcfl/", "guevaradiputadouy")
     elif itemOption == "2":
         scrapeInstagram.generateNavigationProfile("2_", 'https://www.instagram.com/andresojedaxpartidocolorado/', 1)
     elif itemOption == "3":
@@ -20,7 +20,10 @@ def main():
     elif itemOption == "4":
         scrapeInstagram.getCommentFromPublication("4_", "https://www.instagram.com/p/C8xtve2Rcfl/")
     elif itemOption == "5":
-        scrapeInstagram.getCommentFromListPublication("5_", 'https://www.instagram.com/andresojedaxpartidocolorado/', 0)
+        scrapeInstagram.getCommentFromListPublication("5_", 'https://www.instagram.com/andresojedaxpartidocolorado/',
+                                                      "Andrés Ojeda Presidente")
+    elif itemOption == "6":
+        scrapeInstagram.getCommentFromFile("6_")
 
     driverSeleniumInstagram.closeExecution()
 

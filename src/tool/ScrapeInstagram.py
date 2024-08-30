@@ -2,9 +2,9 @@ import configparser
 import csv
 import os
 import sys
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import re
 
 from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
@@ -45,22 +45,20 @@ class ScrapeInstagram:
 
         return flag
 
-    def filterString(self, regex, potentialString):
-        splitResponse = ''
-        if len(potentialString) > 0 and len(regex) > 0:
-            regexString = re.search(regex, potentialString)
-            if regexString is not None:
-                splitString = potentialString[:regexString.start()] + potentialString[regexString.end():]
-                splitResponse = splitString[regexString.end() + 1 - (regexString.end() - regexString.start()):]
+    def loadGeneralCsv(self, filename):
+        arrayFriend = []
+        with open(filename, 'rt', encoding="utf-8") as inputCsv:
+            reader = csv.DictReader(inputCsv)
+            for idx, row in enumerate(reader):
+                arrayFriend.append({
+                    "name": row['B_name'],
+                    "profile": row['B_profile'],
+                    "username": self.getProfileFromUrl(row['B_profile'])
+                })
+        print("%d friends in imported list" % (idx + 1))
+        return arrayFriend
 
-        return splitResponse
-
-    def changeValueString(self, potentialString):
-        if "=" in potentialString:
-            potentialString = ''
-        return potentialString
-
-    def getLikeFromPublication(self, prefix, urlPublication):
+    def getLikeFromPublication(self, prefix, urlPublication, username):
         selectorOpenDiv = 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh xr1yuqi xkrivgy x4ii5y1 x1gryazu x1n2onr6 x1plvlek xryxfnj x1iyjqo2 x2lwn1j xeuugli xdt5ytf x1a02dak xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > span[class="x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"] > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz _a6hd"]'
         selectorCloseDiv = 'div[class="x6s0dn4 x78zum5 x19l4sor x1c4vz4f x2lah0s xl56j7k"] > div[class="x1i10hfl x972fbf xcfux6l x1qhh985 xm0m39n x9f619 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x6s0dn4 xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x1ypdohk x78zum5 xl56j7k x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xcdnw81"]'
         selectorLink = 'div[class="x1dm5mii x16mil14 xiojian x1yutycm x1lliihq x193iq5w xh8yej3"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1pi30zi x1swvt13 xwib8y2 x1y1aw1k x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > div[class="x9f619 x1n2onr6 x1ja2u2z x1qjc9v5 x78zum5 xdt5ytf x1iyjqo2 xl56j7k xeuugli"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 x2lah0s x1qughib x6s0dn4 xozqiw3 x1q0g3np"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 x1iyjqo2 xs83m0k xeuugli x1qughib x6s0dn4 x1a02dak x1q0g3np xdl72j9"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 xdt5ytf x2lah0s x193iq5w xeuugli x1iyjqo2"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1iyjqo2 x2lwn1j xeuugli xdt5ytf xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s x1q0g3np xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > div[class="x1rg5ohu"] > div > a'
@@ -70,21 +68,22 @@ class ScrapeInstagram:
             arrayPublicationUser = []
             self._driverSelenium.executeGetPage(url=f"{urlPublication}")
 
-            self.getUserDivLikePublication(urlPublication, arrayPublicationUser, selectorCloseDiv,
-                                           selectorLink, selectorOpenDiv)
+            self.getUserDivLikePublication(urlPublication, arrayPublicationUser, selectorCloseDiv, selectorLink,
+                                           selectorOpenDiv, username)
 
             if len(arrayPublicationUser) > 0:
                 csvOut = prefix + "user_publication_like_%s.csv" % datetime.now().strftime(
                     "%Y_%m_%d_%H%M")
                 writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
-                writer.writerow(['url_publication', 'B_name', 'B_profile'])
+                writer.writerow(['username', 'url_publication', 'B_name', 'B_profile'])
 
                 for publicationUser in arrayPublicationUser:
-                    writer.writerow([publicationUser.getUrlPublication(), publicationUser.getUserLike().getName(),
+                    writer.writerow([publicationUser.getUsername(), publicationUser.getUrlPublication(),
+                                     publicationUser.getUserLike().getName(),
                                      publicationUser.getUserLike().getProfile()])
 
     def getUserDivLikePublication(self, urlPublication, arrayPublicationUser, selectorCloseDiv, selectorLink,
-                                  selectorOpenDiv):
+                                  selectorOpenDiv, username):
         counter = 0
         divisor = 16
         try:
@@ -102,7 +101,7 @@ class ScrapeInstagram:
                 for link in listLink:
                     sleep(0.5)
                     userLike = UserLike(link.text, link.get_attribute("href"))
-                    publicationUser = PublicationUser(urlPublication, userLike)
+                    publicationUser = PublicationUser(username, urlPublication, userLike)
                     arrayPublicationUser.append(publicationUser)
                     sleep(0.5)
                     link.send_keys(Keys.PAGE_DOWN)
@@ -136,7 +135,7 @@ class ScrapeInstagram:
                 for publication in listPublication:
                     print(publication.get_attribute("href"))
 
-    def generateLikeFromListPublication(self, prefix, page, numberIteration):
+    def generateLikeFromListPublication(self, prefix, pageProfile, numberIteration):
         selectorPublication = 'div[class="_ac7v xras4av xgc1b0m xat24cr xzboxd6"] > div[class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p xfllauq xo2y696 x11i5rnm x2pgyrj"] > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz _a6hd"]'
         selectorClosePublication = 'div[class="x160vmok x10l6tqk x1eu8d0j x1vjfegm"] > div[class="x1i10hfl x972fbf xcfux6l x1qhh985 xm0m39n x9f619 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x6s0dn4 xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x1ypdohk x78zum5 xl56j7k x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xcdnw81"]'
         selectorOpenDiv = 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh xr1yuqi xkrivgy x4ii5y1 x1gryazu x1n2onr6 x1plvlek xryxfnj x1iyjqo2 x2lwn1j xeuugli xdt5ytf x1a02dak xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > span[class="x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x5n08af x10wh9bi x1wdrske x8viiok x18hxmgj"] > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz _a6hd"]'
@@ -144,12 +143,13 @@ class ScrapeInstagram:
         selectorLink = 'div[class="x1dm5mii x16mil14 xiojian x1yutycm x1lliihq x193iq5w xh8yej3"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1pi30zi x1swvt13 xwib8y2 x1y1aw1k x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > div[class="x9f619 x1n2onr6 x1ja2u2z x1qjc9v5 x78zum5 xdt5ytf x1iyjqo2 xl56j7k xeuugli"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 x2lah0s x1qughib x6s0dn4 xozqiw3 x1q0g3np"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 x1iyjqo2 xs83m0k xeuugli x1qughib x6s0dn4 x1a02dak x1q0g3np xdl72j9"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 xdt5ytf x2lah0s x193iq5w xeuugli x1iyjqo2"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1iyjqo2 x2lwn1j xeuugli xdt5ytf xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s x1q0g3np xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > div[class="x1rg5ohu"] > div > a'
 
         os.chdir("./data/out")
-        if len(page) > 0 and len(prefix) > 0:
-            self._driverSelenium.executeGetPage(url=f"{page}")
+        if len(pageProfile) > 0 and len(prefix) > 0:
+            self._driverSelenium.executeGetPage(url=f"{pageProfile}")
             sleep(5)
             arrayPublicationUser = []
 
             try:
+                username = self.getProfileFromUrl(pageProfile)
                 counter = 0
                 while counter <= numberIteration:
                     counter = counter + 1
@@ -166,7 +166,7 @@ class ScrapeInstagram:
                         sleep(10)
 
                         self.getUserDivLikePublication(publication.get_attribute("href"), arrayPublicationUser,
-                                                       selectorCloseDiv, selectorLink, selectorOpenDiv)
+                                                       selectorCloseDiv, selectorLink, selectorOpenDiv, username)
                         sleep(10)
 
                         self._driverSelenium.closeDiv(selectorClosePublication)
@@ -178,10 +178,11 @@ class ScrapeInstagram:
             csvOut = prefix + "publication_like_%s.csv" % datetime.now().strftime(
                 "%Y_%m_%d_%H%M")
             writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
-            writer.writerow(['url_publication', 'B_name', 'B_profile'])
+            writer.writerow(['username', 'url_publication', 'B_name', 'B_profile'])
 
             for publicationUser in arrayPublicationUser:
-                writer.writerow([publicationUser.getUrlPublication(), publicationUser.getUserLike().getName(),
+                writer.writerow([publicationUser.getUsername(), publicationUser.getUrlPublication(),
+                                 publicationUser.getUserLike().getName(),
                                  publicationUser.getUserLike().getProfile()])
 
     def getCommentFromPublication(self, prefix, urlPublication):
@@ -227,7 +228,48 @@ class ScrapeInstagram:
         except Exception as e:
             print(e)
 
-    def getCommentFromListPublication(self, prefix, page, numberIteration):
+    def getProfileFromUrl(self, urlProfile):
+        uniqueIdentifier = ""
+        profile = self.filterString(r"com{1}", urlProfile)
+        if "=" in profile:
+            username = self.filterString(r"[?]", profile)
+        else:
+            username = profile
+
+        if len(username) > 0:
+
+            stringDot = self.filterString(r"[0-9]+", username)
+            number = self.filterString(r"[a-z\\.]+", username)
+
+            username = self.changeValueString(username)
+            stringDot = self.changeValueString(stringDot)
+
+            if len(username) > len(stringDot):
+                if len(username) > len(number):
+                    uniqueIdentifier = username
+            elif len(stringDot) > len(number):
+                uniqueIdentifier = stringDot
+            elif len(number) > len(username):
+                uniqueIdentifier = number
+
+        return uniqueIdentifier
+
+    def filterString(self, regex, potentialString):
+        splitResponse = ''
+        if len(potentialString) > 0 and len(regex) > 0:
+            regexString = re.search(regex, potentialString)
+            if regexString is not None:
+                splitString = potentialString[:regexString.start()] + potentialString[regexString.end():]
+                splitResponse = splitString[regexString.end() + 1 - (regexString.end() - regexString.start()):]
+
+        return splitResponse
+
+    def changeValueString(self, potentialString):
+        if "=" in potentialString:
+            potentialString = ''
+        return potentialString
+
+    def getCommentFromListPublication(self, prefix, page, username):
         selectorPublication = 'div[class="_ac7v xras4av xgc1b0m xat24cr xzboxd6"] > div[class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p xfllauq xo2y696 x11i5rnm x2pgyrj"] > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz _a6hd"]'
         selectorClosePublication = 'div[class="x160vmok x10l6tqk x1eu8d0j x1vjfegm"] > div[class="x1i10hfl x972fbf xcfux6l x1qhh985 xm0m39n x9f619 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x6s0dn4 xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x1ypdohk x78zum5 xl56j7k x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xcdnw81"]'
 
@@ -240,58 +282,9 @@ class ScrapeInstagram:
             self._driverSelenium.executeGetPage(url=f"{page}")
             sleep(5)
             arrayPublicationComment = []
-            try:
-                counter = 0
-                #while counter <= numberIteration:
-                #    counter = counter + 1
-                #    self._driverSelenium.scrollToBottomCssSelector(selectorPublication, 1)
-                #    sleep(10)
-
-                if self.findElement(self._driverSelenium.getBrowser(), selectorPublication):
-                    listPublication = self._driverSelenium.evaluateExpressionCssSelectorMany(selectorPublication)
-                    sleep(5)
-
-                    for publication in listPublication:
-                        self._driverSelenium.executeElementClick(publication)
-                        sleep(10)
-
-                        listBlockComment = self._driverSelenium.evaluateExpressionCssSelectorMany(
-                            selectorBlockComment)
-                        print("urlPublication")
-                        print(publication.get_attribute("href"))
-                        for blockComment in listBlockComment:
-                            linkUserContent = ''
-                            commentUserContent = ''
-
-                            sleep(5)
-
-                            if self.findElement(blockComment, selectorLinkUser):
-                                linkUser = blockComment.find_element(By.CSS_SELECTOR, selectorLinkUser)
-                                if linkUser.get_attribute("href") is not None:
-                                    print("linkUser.get_attribute")
-                                    print(linkUser.get_attribute("href"))
-                                    linkUserContent = linkUser.get_attribute("href")
-
-                            if self.findElement(blockComment, selectorComment):
-                                commentUser = blockComment.find_element(By.CSS_SELECTOR, selectorComment)
-                                if commentUser is not None:
-                                    print("commentUser")
-                                    print(commentUser.text)
-                                    commentUserContent = commentUser.text
-
-                            userComment = UserComment(linkUserContent, commentUserContent)
-                            publicationComment = PublicationComment(publication.get_attribute("href"),
-                                                                    userComment)
-
-                            arrayPublicationComment.append(publicationComment)
-
-                        sleep(10)
-                        if self.findElement(self._driverSelenium.getBrowser(), selectorClosePublication):
-                            self._driverSelenium.closeDiv(selectorClosePublication)
-                            sleep(20)
-
-            except Exception as e:
-                print(e)
+            self.getCommentPublicationFromProfile(arrayPublicationComment, username, selectorBlockComment,
+                                                  selectorClosePublication, selectorComment, selectorLinkUser,
+                                                  selectorPublication)
 
             if 0 < len(arrayPublicationComment):
                 csvOut = prefix + "publication_comment_%s.csv" % datetime.now().strftime(
@@ -302,4 +295,91 @@ class ScrapeInstagram:
             for publicationComment in arrayPublicationComment:
                 writer.writerow(
                     [publicationComment.getUrlPublication(), publicationComment.getUserComment().getUrlUsername(),
+                     publicationComment.getUserComment().getComment()])
+
+    def getCommentPublicationFromProfile(self, arrayPublicationComment, username, selectorBlockComment,
+                                         selectorClosePublication, selectorComment, selectorLinkUser,
+                                         selectorPublication):
+        try:
+            if self.findElement(self._driverSelenium.getBrowser(), selectorPublication):
+                listPublication = self._driverSelenium.evaluateExpressionCssSelectorMany(selectorPublication)
+                sleep(5)
+
+                for publication in listPublication:
+                    self._driverSelenium.executeElementClick(publication)
+                    sleep(10)
+
+                    listBlockComment = self._driverSelenium.evaluateExpressionCssSelectorMany(
+                        selectorBlockComment)
+                    print("urlPublication")
+                    print(publication.get_attribute("href"))
+                    for blockComment in listBlockComment:
+                        linkUserContent = ''
+                        commentUserContent = ''
+
+                        sleep(5)
+
+                        if self.findElement(blockComment, selectorLinkUser):
+                            linkUser = blockComment.find_element(By.CSS_SELECTOR, selectorLinkUser)
+                            if linkUser.get_attribute("href") is not None:
+                                print("linkUser.get_attribute")
+                                print(linkUser.get_attribute("href"))
+                                linkUserContent = linkUser.get_attribute("href")
+
+                        if self.findElement(blockComment, selectorComment):
+                            commentUser = blockComment.find_element(By.CSS_SELECTOR, selectorComment)
+                            if commentUser is not None:
+                                print("commentUser")
+                                print(commentUser.text)
+                                commentUserContent = commentUser.text
+
+                        userComment = UserComment(linkUserContent, commentUserContent)
+                        publicationComment = PublicationComment(username, publication.get_attribute("href"),
+                                                                userComment)
+
+                        arrayPublicationComment.append(publicationComment)
+
+                    sleep(10)
+                    if self.findElement(self._driverSelenium.getBrowser(), selectorClosePublication):
+                        self._driverSelenium.closeDiv(selectorClosePublication)
+                        sleep(20)
+
+        except Exception as e:
+            print(e)
+
+    def getCommentFromFile(self, prefix):
+        os.chdir("./data/in")
+        filenameReader = input("Enter the filename .csv: ")
+        if len(filenameReader) > 0 and len(prefix) > 0:
+            print("Loading list from %s..." % filenameReader)
+            listAccount = self.loadGeneralCsv(filenameReader)
+            os.chdir("../out")
+
+            selectorPublication = 'div[class="_ac7v xras4av xgc1b0m xat24cr xzboxd6"] > div[class="x1lliihq x1n2onr6 xh8yej3 x4gyw5p xfllauq xo2y696 x11i5rnm x2pgyrj"] > a[class="x1i10hfl xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xt0psk2 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz _a6hd"]'
+            selectorClosePublication = 'div[class="x160vmok x10l6tqk x1eu8d0j x1vjfegm"] > div[class="x1i10hfl x972fbf xcfux6l x1qhh985 xm0m39n x9f619 xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x16tdsg8 x1hl2dhg xggy1nq x1a2a7pz x6s0dn4 xjbqb8w x1ejq31n xd10rxx x1sy0etr x17r0tee x1ypdohk x78zum5 xl56j7k x1y1aw1k x1sxyh0 xwib8y2 xurb0ha xcdnw81"]'
+
+            selectorBlockComment = 'div[class="x1qjc9v5 x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x78zum5 xdt5ytf x2lah0s xk390pu xdj266r x11i5rnm xat24cr x1mh8g0r xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 xggy1nq x11njtxf"] > li[class="_a9zj _a9zl"] > div[class="_a9zm"] > div[class=" _a9zo"] > div[class="_a9zr"]'
+            selectorLinkUser = 'h3[class="_a9zc"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh xw3qccf x1n2onr6 x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > span[class="xt0psk2"] > div > a[class="x1i10hfl xjqpnuy xa49m3k xqeqjp1 x2hbi6w xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1q0g3np x1lku1pv x1a2a7pz x6s0dn4 xjyslct x1ejq31n xd10rxx x1sy0etr x17r0tee x9f619 x1ypdohk x1f6kntn xwhw2v2 xl56j7k x17ydfre x2b8uid xlyipyv x87ps6o x14atkfc xcdnw81 x1i0vuye xjbqb8w xm3z3ea x1x8b98j x131883w x16mih1h x972fbf xcfux6l x1qhh985 xm0m39n xt0psk2 xt7dq6l xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x1n5bzlp xqnirrm xj34u2y x568u83"]'
+            selectorComment = 'div[class="_a9zs"] > span[class="_ap3a _aaco _aacu _aacx _aad7 _aade"]'
+            arrayPublicationComment = []
+
+            for account in listAccount:
+                profile = account['profile']
+                self._driverSelenium.executeGetPage(url=f"{profile}")
+                sleep(5)
+                self.getCommentPublicationFromProfile(arrayPublicationComment, account['username'],
+                                                      selectorBlockComment,
+                                                      selectorClosePublication, selectorComment, selectorLinkUser,
+                                                      selectorPublication)
+
+            if 0 < len(arrayPublicationComment):
+                csvOut = prefix + "politic_publication_comment_%s.csv" % datetime.now().strftime(
+                    "%Y_%m_%d_%H%M")
+                writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
+                writer.writerow(['username', 'url_publication', 'B_name', 'B_profile'])
+
+            for publicationComment in arrayPublicationComment:
+                writer.writerow(
+                    [publicationComment.getUsername(), publicationComment.getUrlPublication(),
+                     publicationComment.getUserComment().getUrlUsername(),
                      publicationComment.getUserComment().getComment()])
