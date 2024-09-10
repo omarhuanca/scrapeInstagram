@@ -7,6 +7,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver import ActionChains, Keys
 
 
 class DriverSeleniumInstagram:
@@ -58,6 +59,20 @@ class DriverSeleniumInstagram:
         except NoSuchElementException:
             print("No Items")
 
+    def evaluateExpressionXPath(self, expressionXPath):
+        try:
+            item = self._browser.find_element(By.XPATH, expressionXPath)
+            return item
+        except NoSuchElementException:
+            print("No Items")
+
+    def evaluateExpressionSelector(self, expressionCssSelector):
+        try:
+            item = self._browser.find_element(By.CSS_SELECTOR, expressionCssSelector)
+            return item
+        except NoSuchElementException:
+            print("No Items")
+
     def scrollToBottomCssSelector(self, expressionCssSelector, scrollPauseItem):
         numerator = self.generateNumeratorCssSelector(expressionCssSelector)
         counter = 0
@@ -81,3 +96,7 @@ class DriverSeleniumInstagram:
         # Wait to load page
         time.sleep(scrollPauseItem)
         self._browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+    def writeOnInput(self, messageText):
+        ActionChains(self._browser).key_down(Keys.SHIFT).send_keys(
+            messageText).perform()

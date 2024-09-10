@@ -6,14 +6,16 @@ import re
 from datetime import datetime
 from pathlib import Path
 
-from selenium.webdriver import Keys
 from selenium.webdriver.common.by import By
 from time import sleep
 from src.business.account.BasicAccount import BasicAccount
+from src.business.account.PotentialContact import PotentialContact
+from src.business.account.ProfileName import ProfileName
 from src.business.account.PublicationComment import PublicationComment
 from src.business.account.PublicationUser import PublicationUser
 from src.business.account.UserComment import UserComment
 from src.business.account.UserLike import UserLike
+from selenium.webdriver import ActionChains, Keys
 
 
 class ScrapeInstagram:
@@ -383,3 +385,102 @@ class ScrapeInstagram:
                     [publicationComment.getUsername(), publicationComment.getUrlPublication(),
                      publicationComment.getUserComment().getUrlUsername(),
                      publicationComment.getUserComment().getComment()])
+
+    def findUserMatchPadron(self, prefix, mainPage):
+        xpathLinkSearch = '//div[@class="x1xgvd2v x1o5hw5a xaeubzz x1cy8zhl xvbhtw8 x9f619 x78zum5 xdt5ytf x1gvbg2u x1y1aw1k xn6708d xx6bls6 x1ye3gou"]/div[2]/div[2]/span/div/a'
+        selectorInputSearch = '//div[@class="xjoudau x6s0dn4 x78zum5 xdt5ytf x1c4vz4f xs83m0k xrf2nzk x1n2onr6 xh8yej3 x1hq5gj4"]/input'
+
+        selectorDivResult = 'div[class="x78zum5 xdt5ytf x5yr21d"] > div[class="x6s0dn4 x78zum5 xdt5ytf x5yr21d x1odjw0f x1n2onr6 xh8yej3"] > div[class="x9f619 x78zum5 xdt5ytf x1iyjqo2 x6ikm8r x1odjw0f xh8yej3 xocp1fn"] > a[class="x1i10hfl x1qjc9v5 xjbqb8w xjqpnuy xa49m3k xqeqjp1 x2hbi6w x13fuv20 xu3j5b3 x1q0q8m5 x26u7qi x972fbf xcfux6l x1qhh985 xm0m39n x9f619 x1ypdohk xdl72j9 x2lah0s xe8uvvx xdj266r x11i5rnm xat24cr x1mh8g0r x2lwn1j xeuugli xexx8yu x4uap5 x18d9i69 xkhd6sd x1n2onr6 x16tdsg8 x1hl2dhg xggy1nq x1ja2u2z x1t137rt x1q0g3np x87ps6o x1lku1pv x1a2a7pz x1dm5mii x16mil14 xiojian x1yutycm x1lliihq x193iq5w xh8yej3"]'
+        selectorSpanSearch = 'div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh xxbr6pl xbbxn1n xwib8y2 x1y1aw1k x1uhb9sk x1plvlek xryxfnj x1c4vz4f x2lah0s xdt5ytf xqjyukv x1qjc9v5 x1oa3qoh x1nhvcw1"] > div[class="x9f619 x1n2onr6 x1ja2u2z x1qjc9v5 x78zum5 xdt5ytf x1iyjqo2 xl56j7k xeuugli"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 x2lah0s x1qughib x6s0dn4 xozqiw3 x1q0g3np"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 x1iyjqo2 xs83m0k xeuugli x1qughib x6s0dn4 x1a02dak x1q0g3np xdl72j9"] > div[class="x9f619 x1n2onr6 x1ja2u2z x78zum5 xdt5ytf x2lah0s x193iq5w xeuugli x1iyjqo2"] > div[class="x9f619 xjbqb8w x78zum5 x168nmei x13lgxp2 x5pf9jr xo71vjh x1uhb9sk x1plvlek xryxfnj x1iyjqo2 x2lwn1j xeuugli xdt5ytf xqjyukv x1cy8zhl x1oa3qoh x1nhvcw1"] > span[class="x1lliihq x1plvlek xryxfnj x1n2onr6 x193iq5w xeuugli x1fj9vlw x13faqbe x1vvkbs x1s928wv xhkezso x1gmr53x x1cpjm7i x1fgarty x1943h6x x1i0vuye xvs91rp xo1l8bm x1roi4f4 x10wh9bi x1wdrske x8viiok x18hxmgj"]'
+
+        xpathLinkSearchClose = '//div[@class="x1xgvd2v x1cy8zhl xvbhtw8 x9f619 x78zum5 xdt5ytf x1gvbg2u x1y1aw1k xn6708d xx6bls6 x1ye3gou"]/div[2]/div[2]/span/div/a'
+
+        os.chdir("./data/in")
+        filenameReader = "mil_dato_balde_tres.csv"
+        if len(filenameReader) > 0 and len(mainPage) > 0:
+            listFileRow = self.loadCustomCsv(filenameReader, "B_lastname", "B_second_lastname", "B_firstname",
+                                             "B_middlename")
+            os.chdir("../out")
+            arrayProfileName = []
+
+            try:
+                self._driverSelenium.executeGetPage(url=f"{mainPage}")
+
+                elementSearchLinkXpath = self._driverSelenium.evaluateExpressionXPath(xpathLinkSearch)
+                sleep(10)
+                ActionChains(self._driverSelenium.getBrowser()).move_to_element(elementSearchLinkXpath).perform()
+                elementSearchLinkXpath.click()
+                sleep(30)
+                elementInputSearch = self._driverSelenium.evaluateExpressionXPath(selectorInputSearch)
+                ActionChains(self._driverSelenium.getBrowser()).move_to_element(elementInputSearch).perform()
+
+                for fileRow in listFileRow:
+
+                    nameSearch = fileRow.toString()
+                    print(nameSearch)
+
+                    ActionChains(self._driverSelenium.getBrowser()).key_down(Keys.SHIFT).send_keys(nameSearch).perform()
+                    sleep(30)
+
+                    listPotentialContact = self._driverSelenium.evaluateExpressionCssSelectorMany(selectorDivResult)
+                    for contact in listPotentialContact:
+                        urlProfile = contact.get_attribute("href")
+                        if self.findElement(contact, selectorSpanSearch):
+                            elementSpan = contact.find_element(By.CSS_SELECTOR, selectorSpanSearch)
+                            nameProfile = self.filterFullname(r"[\\•]", elementSpan.text)
+                        profileName = ProfileName(urlProfile, nameProfile)
+                        arrayProfileName.append(profileName)
+
+                    elementSearchLinkXpath2 = self._driverSelenium.evaluateExpressionXPath(xpathLinkSearchClose)
+                    sleep(10)
+                    ActionChains(self._driverSelenium.getBrowser()).move_to_element(elementSearchLinkXpath2).perform()
+                    elementSearchLinkXpath2.click()
+
+                    sleep(10)
+                    ActionChains(self._driverSelenium.getBrowser()).move_to_element(elementSearchLinkXpath).perform()
+                    elementSearchLinkXpath.click()
+
+            except Exception:
+                pass
+
+            if 0 < len(arrayProfileName):
+                csvOut = prefix + "padron_match_%s.csv" % datetime.now().strftime(
+                    "%Y_%m_%d_%H%M")
+                writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
+                writer.writerow(['B_name', 'B_profile'])
+
+            for profileName in arrayProfileName:
+                writer.writerow([profileName.getName(), profileName.getProfile()])
+
+    def loadCustomCsv(self, filename, lastname, secondLastname, firstname, middlename):
+        arrayPotential = []
+        with open(filename, 'rt', encoding="utf-8") as inputCsv:
+            reader = csv.DictReader(inputCsv)
+            for idx, row in enumerate(reader):
+                row[lastname] = self.replaceNotNull(row[lastname])
+                row[secondLastname] = self.replaceNotNull(row[secondLastname])
+                row[firstname] = self.replaceNotNull(row[firstname])
+                row[middlename] = self.replaceNotNull(row[middlename])
+                potentialContact = PotentialContact(row[lastname], row[secondLastname], row[firstname], row[middlename])
+                arrayPotential.append(potentialContact)
+
+        return arrayPotential
+
+    def replaceNotNull(self, potentialName):
+        potentialName = potentialName.strip()
+        if potentialName == "NULL":
+            potentialName = ""
+
+        return potentialName
+
+    def filterFullname(self, regex, potentialFullname):
+        splitString = potentialFullname
+        if 0 < len(regex) and 0 < len(potentialFullname):
+            try:
+                regexString = re.search(regex, potentialFullname)
+                if regex in regexString:
+                    potentialFullname = potentialFullname[:regexString.start()]
+                    splitString = potentialFullname.strip()
+            except Exception as e:
+                print(e)
+        return splitString
