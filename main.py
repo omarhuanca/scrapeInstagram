@@ -32,6 +32,9 @@ def main():
     elif itemOption == "7":
         # balde 3.1 found user
         scrapeInstagram.findUserMatchPadron("7_", "https://www.instagram.com/")
+    elif itemOption == "8":
+        scrapeInstagram.getCommentUserLikePublication("8_", "https://www.instagram.com/andresojedaxpartidocolorado/",
+                                                      "Andrés Ojeda Presidente")
 
     driverSeleniumInstagram.closeExecution()
 
