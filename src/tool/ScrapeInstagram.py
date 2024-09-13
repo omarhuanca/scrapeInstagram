@@ -17,6 +17,9 @@ from src.business.account.UserComment import UserComment
 from src.business.account.UserLike import UserLike
 from selenium.webdriver import ActionChains, Keys
 
+from src.business.person.Person import Person
+from src.business.publication.PublicationContact import PublicationContact
+
 
 class ScrapeInstagram:
 
@@ -79,7 +82,7 @@ class ScrapeInstagram:
                 csvOut = prefix + "user_publication_like_%s.csv" % datetime.now().strftime(
                     "%Y_%m_%d_%H%M")
                 writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
-                writer.writerow(['username', 'url_publication', 'B_name', 'B_profile'])
+                writer.writerow(['username', 'url_publish', 'B_name', 'B_profile'])
 
                 for publicationUser in arrayPublicationUser:
                     writer.writerow([publicationUser.getUsername(), publicationUser.getUrlPublication(),
@@ -188,7 +191,7 @@ class ScrapeInstagram:
             csvOut = prefix + "publication_like_%s.csv" % datetime.now().strftime(
                 "%Y_%m_%d_%H%M")
             writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
-            writer.writerow(['username', 'url_publication', 'B_name', 'B_profile'])
+            writer.writerow(['username', 'publication', 'B_name', 'B_profile'])
 
             for publicationUser in arrayPublicationUser:
                 writer.writerow([publicationUser.getUsername(), publicationUser.getUrlPublication(),
@@ -492,3 +495,78 @@ class ScrapeInstagram:
             except Exception as e:
                 print(e)
         return splitString
+
+    def getCommentUserLikePublication(self, prefix, page, username):
+        os.chdir("./data/in")
+        arrayCensus = self.readCensus("padron.csv")
+        filenameReader = input("Enter the filename .csv: ")
+        if len(filenameReader) > 0:
+            print("Loading list from %s..." % filenameReader)
+            listFileRow = self.loadCustomCsvPublicationContact(filenameReader, "username", "publication", "B_name",
+                                                               "B_profile")
+            os.chdir("../out")
+            if len(listFileRow) > 0:
+                csvOut = prefix + "user_publication_code_%s.csv" % datetime.now().strftime(
+                    "%Y_%m_%d_%H%M")
+                writer = csv.writer(open(csvOut, 'w', encoding="utf-8"))
+                writer.writerow(['name', 'publish', 'B_zone', 'B_code', 'B_name', 'B_profile'])
+            try:
+                for fileRow in listFileRow:
+                    for itemCensus in arrayCensus:
+                        if itemCensus.compareOtherFullname(itemCensus.reverseLastname(fileRow.getNameContact())):
+                            writer.writerow([fileRow.getNameAccount(), fileRow.getPublication(), itemCensus.getZone(),
+                                             itemCensus.getCode(), fileRow.getNameContact(),
+                                             fileRow.getProfileContact()])
+
+            except Exception:
+                sys.stdout.write("")
+
+    def loadCustomCsvCode(self, filename, zone, code, lastname, secondLastname, firstname, middlename):
+        arrayPerson = []
+        with open(filename, 'rt', encoding="utf-8") as inputCsv:
+            reader = csv.DictReader(inputCsv)
+            for idx, row in enumerate(reader):
+                row[zone] = self.replaceNotNull(row[zone])
+                row[code] = self.replaceNotNull(row[code])
+                row[lastname] = self.replaceNotNull(row[lastname])
+                row[secondLastname] = self.replaceNotNull(row[secondLastname])
+                row[firstname] = self.replaceNotNull(row[firstname])
+                row[middlename] = self.replaceNotNull(row[middlename])
+                potentialContact = Person(row[zone], row[code], row[lastname], row[secondLastname], row[firstname],
+                                          row[middlename])
+                arrayPerson.append(potentialContact)
+
+        print("%d quantity of item" % (idx + 1))
+        return arrayPerson
+
+    def readCensus(self, filename):
+        arrayCensus = []
+        if len(filename) > 0:
+            arrayCensus = self.loadCustomCsvCode(filename, "B_zone", "B_code", "B_lastname", "B_second_lastname",
+                                                 "B_firstname", "B_middlename")
+        return arrayCensus
+
+    def loadCustomCsvPublicationContact(self, filename, nameAccount, publication, nameContact, profileContact):
+        arrayPerson = []
+        with open(filename, 'rt', encoding="utf-8") as inputCsv:
+            reader = csv.DictReader(inputCsv)
+            for idx, row in enumerate(reader):
+                row[nameAccount] = self.replaceNotNull(row[nameAccount])
+                row[publication] = self.replaceNotNull(row[publication])
+                row[nameContact] = self.replaceNotNull(row[nameContact])
+                row[profileContact] = self.replaceNotNull(row[profileContact])
+
+                publicationContact = PublicationContact(row[nameAccount], row[publication], row[nameContact],
+                                                        row[profileContact])
+
+                arrayPerson.append(publicationContact)
+
+        print("%d quantity of item" % (idx + 1))
+        return arrayPerson
+
+    def replaceNotNull(self, potentialName):
+        potentialName = potentialName.strip()
+        if potentialName == "NULL":
+            potentialName = ""
+
+        return potentialName
