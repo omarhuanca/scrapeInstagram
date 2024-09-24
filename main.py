@@ -8,7 +8,7 @@ def main():
     basicAccount = scrapeInstagram.readConfigPath()
     scrapeInstagram.instagramLogin(basicAccount)
 
-    itemOption = input("Enter number value: ")
+    itemOption = input("Enter number value 1 or 2 or 3 or 4 or 5 or 6 or 7 or 8 to generate list: ")
 
     if itemOption == "1":
         # get info from username, profile
@@ -24,6 +24,7 @@ def main():
         scrapeInstagram.getCommentFromPublication("4_", "https://www.instagram.com/p/C8xtve2Rcfl/",
                                                   "Andrés Ojeda Presidente")
     elif itemOption == "5":
+        # balde 1.2
         # get profile, comment
         scrapeInstagram.getCommentFromListPublication("5_", "https://www.instagram.com/andresojedaxpartidocolorado/",
                                                       "Andrés Ojeda Presidente")
@@ -33,6 +34,7 @@ def main():
         # balde 3.1 found user
         scrapeInstagram.findUserMatchPadron("7_", "https://www.instagram.com/")
     elif itemOption == "8":
+        # balde 1.3 user match zone code
         scrapeInstagram.getCommentUserLikePublication("8_", "https://www.instagram.com/andresojedaxpartidocolorado/",
                                                       "Andrés Ojeda Presidente")
 
